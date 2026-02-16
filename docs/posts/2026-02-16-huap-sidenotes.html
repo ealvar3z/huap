@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Static Site</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="/rss.xml" rel="alternate" type="application/rss+xml" title="RSS Feed" />
+</head>
+<body>
+    <div class="container">
+        <nav class="site-nav">
+            <a href="/index.html">Home</a>
+            <a href="https://johndoe.substack.com" target="_blank" rel="noopener">Substack</a>
+        </nav>
+        <h1>Using Sidenotes in huap</h1>
+<p>Sidenotes are simple markers that huap expands into HTML wrappers.</p>
+<div class="sidenote">
+<p>This block will render as a sidenote container in the final HTML.
+Use it for callouts, asides, or extra context that should stand out.</p>
+</div>
+<p>You keep writing normal Markdown after that.</p>
+<h2>Why this is useful</h2>
+<ul>
+<li>Keep the main flow short.</li>
+<li>Move context into a visual aside.</li>
+<li>Keep source readable with plain text markers.</li>
+</ul>
+<div class="sidenote">
+<p>Sidenote tags must sit on their own lines.</p>
+</div>
+
+    </div>
+
+    <footer>
+        <p>
+            This page is also available as <a href="/rss.xml">RSS</a> feed.
+            Page was build with <a href="https://github.com/ealvar3z/huap" target="_blank" rel="noopener">huap</a>.
+        </p>
+    </footer>
+
+</body>
+</html>

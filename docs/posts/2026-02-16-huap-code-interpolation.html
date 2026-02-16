@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Static Site</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="/rss.xml" rel="alternate" type="application/rss+xml" title="RSS Feed" />
+</head>
+<body>
+    <div class="container">
+        <nav class="site-nav">
+            <a href="/index.html">Home</a>
+            <a href="https://johndoe.substack.com" target="_blank" rel="noopener">Substack</a>
+        </nav>
+        <h1>Using <code>$code</code> Interpolation in huap</h1>
+<p>huap can pull source files directly into a Markdown page before rendering.</p>
+<h2>Full file include</h2>
+<p>This includes the full file (with snippet marker lines removed):</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+
+void greet(const char *name) {
+  printf(&quot;hello, %s\n&quot;, name);
+}
+
+
+
+int sum(int a, int b) {
+  return a + b;
+}
+
+
+int main(void) {
+  greet(&quot;huap&quot;);
+  printf(&quot;2 + 3 = %d\n&quot;, sum(2, 3));
+  return 0;
+}
+
+</code></pre>
+<h2>Named snippet include</h2>
+<p>This includes only one named snippet from the same file:</p>
+<pre><code>int sum(int a, int b) {
+  return a + b;
+}
+
+</code></pre>
+<p>And this includes another snippet without brackets:</p>
+<pre><code>void greet(const char *name) {
+  printf(&quot;hello, %s\n&quot;, name);
+}
+
+</code></pre>
+
+    </div>
+
+    <footer>
+        <p>
+            This page is also available as <a href="/rss.xml">RSS</a> feed.
+            Page was build with <a href="https://github.com/ealvar3z/huap" target="_blank" rel="noopener">huap</a>.
+        </p>
+    </footer>
+
+</body>
+</html>

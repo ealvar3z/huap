@@ -89,6 +89,7 @@ Output naming:
 - `foo.md` becomes `DESTDIR/foo.html`
 - Non-`.md` files are copied byte-for-byte into the destination tree
 - Copied and rendered files preserve source file mode and mtime (second precision)
+- Incremental build: unchanged files are skipped using source/destination mtime comparison
 
 ---
 
