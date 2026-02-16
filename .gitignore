@@ -1,0 +1,16 @@
+# Build artifacts
+/huap
+*.o
+*.a
+
+# Crash/debug artifacts
+core
+core.*
+vgcore.*
+*.dSYM/
+
+# Editor/OS noise
+*~
+*.swp
+*.swo
+.DS_Store

@@ -1,0 +1,18 @@
+huap
+Copyright (c) 2026 E. Alvarez
+
+This project is an independent reimplementation inspired by the behavior of
+the md2html tool. No upstream source code was referenced.
+
+This project includes or depends on the following third-party components:
+
+- md4c (Markdown parser)
+  Copyright (c) 2016-2024 Martin Mitáš
+  License: MIT
+
+- Mongoose (Embedded web server)
+  Copyright (c) Cesanta Software Limited
+  License: GPLv2 or Commercial (depending on your build)
+
+See the LICENSE file and third-party license files for details.
+

@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -eu
+
+PORT="8080"
+BUILD_SCRIPT="./build"
+WATCH_DIR="content"
+DOCS_DIR="docs"
+SERVER_PID=""
+
+cleanup() {
+	echo ""
+	echo "[INFO]: Shutting down server..."
+	if [[ -n "$SERVER_PID" ]] && \
+		 kill "$SERVER_PID" 2>/dev/null; then
+		echo "[INFO]: Server stopped."
+	fi
+	exit 0
+}
+
+initial_build() {
+	echo "--- Performing initial build ---"
+	"$BUILD_SCRIPT"
+	echo "--- Build complete ---"
+}
+
+start_server() {
+	local PY="python3"
+	if ! command -v python3 &> /dev/null; then
+		PY="python"
+	fi
+
+	echo ""
+	echo "[INFO]: Starting server on localhost:$PORT"
+	echo "[INFO]: Now serving ... '$DOCS_DIR' directory."
+
+	$PY -m http.server -d "$DOCS_DIR" "$PORT" &
+	SERVER_PID=$!
+}
+
+calc_checksum() {
+	if [[ "$(uname -s)" == "Darwin" ]]; then
+		find "$WATCH_DIR" -type f -exec stat -f "%m %z %N" {} + | md5sum
+	else
+		find "$WATCH_DIR" -type f -exec stat -c "%Y %s %n" {} + | md5sum
+	fi
+}
+
+watch_files() {
+  echo "Watching for changes in '$WATCH_DIR/'..."
+  local last_checksum=""
+
+  while true; do
+    current_checksum=$(find "$WATCH_DIR" -type f -exec stat -c "%Y %s %n" {} + | md5sum)
+
+    if [[ -z "$last_checksum" ]]; then
+      last_checksum="$current_checksum"
+      sleep 1
+      continue
+    fi
+
+    # checksum changed here. 
+    if [[ "$current_checksum" != "$last_checksum" ]]; then
+      echo ""
+      echo "--- Changes detected, rebuilding site... ---"
+      "$BUILD_SCRIPT"
+      echo "--- Rebuild complete. ---"
+      # Update the checksum after rebuilding
+      last_checksum="$current_checksum"
+    fi
+
+    sleep 1
+  done
+}
+
+main() {
+	initial_build
+	start_server
+	trap cleanup EXIT
+
+	watch_files
+}
+
+main

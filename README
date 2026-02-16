@@ -1,0 +1,193 @@
+# huap (hurry up and parse)
+
+`huap` is a small, fast Markdown-to-HTML site tool written in C.
+
+- Recursively converts a directory of Markdown files to HTML
+- Copies non-Markdown assets as-is
+- Optional `layout.html` wrapper using `{{Body}}`
+- `$code` interpolation (whole file or named snippet)
+- `[sidenote] ... [/sidenote]` blocks
+- Local link rewriting: strip `.md` from local links
+- Two modes:
+  - **Build mode**: write a processed tree into a destination directory
+  - **Serve mode**: run an HTTP server and render Markdown on demand
+
+Targets: **OpenBSD**, **FreeBSD**, **Linux**.
+Development: Linux.
+Compiler: any C11 compiler (`cc`, `clang`, `gcc`).
+
+---
+
+## Build
+
+This project uses:
+- **md4c** for Markdown -> HTML
+- **Mongoose** for HTTP serving
+- `fts(3)` directory walking (available on OpenBSD/FreeBSD/Linux)
+- pthreads for parallel build
+- vendored third-party sources under `vendor/`
+
+Compile `huap`:
+
+```sh
+make compile
+```
+
+The binary is written to `./huap`.
+
+---
+
+## Repo Targets
+
+- `make compile` - compile `huap` from local vendored sources
+- `make build` - run `./build` (project site build helper)
+- `make dev` - run `./dev` (watch/build + local static server helper)
+- `make clean` - remove `docs/` and `huap`
+
+---
+
+## Usage
+
+### Serve mode (default)
+
+Serve the current directory on `:8080`:
+
+```sh
+./huap
+```
+
+Serve the current directory on a custom port:
+
+```sh
+./huap :8000
+```
+
+Routing behavior:
+- If the request path has a file extension (for example `/styles.css`, `/img/logo.png`), the server returns the file as-is.
+- If the request path has no extension (for example `/`, `/about`, `/posts/hello`), the server renders the corresponding Markdown file:
+  - `/` -> `./index.md`
+  - `/about` -> `./about.md`
+  - `/posts/hello` -> `./posts/hello.md`
+
+If `./layout.html` exists, it wraps the rendered HTML (see below).
+
+### Build mode
+
+Recursively copy the current directory into `DESTDIR`, converting `.md` -> HTML:
+
+```sh
+./huap ./www
+```
+
+Parallel build (use N worker threads):
+
+```sh
+./huap -j 8 ./www
+```
+
+Output naming:
+- `foo.md` becomes `DESTDIR/foo.html`
+- Non-`.md` files are copied byte-for-byte into the destination tree
+- Copied and rendered files preserve source file mode and mtime (second precision)
+
+---
+
+## layout.html
+
+If `layout.html` exists in the directory being served/built, and it contains `{{Body}}`, it will be used to wrap each generated page.
+
+Example:
+
+```html
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Site</title></head>
+  <body>
+    <main>
+      {{Body}}
+    </main>
+  </body>
+</html>
+```
+
+If `layout.html` exists but does not include `{{Body}}`, the tool emits `layout.html` followed by the rendered HTML.
+
+---
+
+## Code Interpolation: `$code`
+
+Markdown files may contain `$code` references. Interpolation happens before Markdown is converted to HTML.
+
+Syntax:
+
+```text
+$code /abs/path/to/file
+$code /abs/path/to/file snippet_name
+$code /abs/path/to/file [snippet_name]
+```
+
+### Snippet markers
+
+To define a snippet inside a source file:
+
+```text
+//snippet name
+... code ...
+//endsnippet
+```
+
+If you interpolate the whole file, snippet marker lines are removed from output.
+
+---
+
+## Sidenotes
+
+Wrap a portion of a document in a sidenote container:
+
+```text
+[sidenote]
+
+This is a sidenote.
+
+[/sidenote]
+```
+
+These tags must occupy their own paragraph/line per Markdown rules.
+
+They are replaced with:
+
+```html
+<div class="sidenote">
+...
+</div>
+```
+
+---
+
+## Local Links
+
+Local links ending in `.md` have that extension stripped, so the resulting links point at the formatted page rather than raw Markdown.
+
+Example:
+
+```markdown
+[About](about.md)
+```
+
+Becomes a link to `about`.
+
+Note: this behavior is most natural for serve mode (extensionless routes). For static builds that emit `.html` files, author links accordingly when needed.
+
+---
+
+## Notes and Constraints
+
+- Symlinks are ignored by default during build traversal.
+- Serve mode includes basic path traversal protection (rejects `..` in URL paths).
+- The implementation is intentionally small and Unixy.
+
+---
+
+## License
+
+ISC.

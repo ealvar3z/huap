@@ -1,0 +1,132 @@
+#!/bin/bash
+
+set -eu
+
+# --- Configuration ---
+SITE_URL="https://johndoe.github.io/my-blog"
+BLOG_TITLE="My Blog"
+BLOG_DESC="Welcome to my personal blog."
+
+SRC_DIR="content"
+POSTS_DIR="$SRC_DIR/posts"
+DEST_DIR="$(pwd)/docs"
+INDEX_MD_PATH="$SRC_DIR/index.md"
+RSS_XML_PATH="$SRC_DIR/rss.xml"
+
+# Globals for generate_post_lists()
+POST_LIST_MD=""
+POST_LIST_RSS=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+format_date() {
+	local input_date="$1"
+	local output_format="$2"
+
+	if [[ "$(uname -a)" == "Darwin" ]]; then
+		date -j -f "%Y-%m-%d" "$input_date" "$output_format"
+	else
+		date -d "$input_date" "$output_format"
+	fi
+}
+
+generate_post_lists() {
+  echo "Gathering post data..."
+  
+  local blog_posts
+  mapfile -t blog_posts < <(ls -r "$POSTS_DIR"/*.md)
+
+  for post_path in "${blog_posts[@]}"; do
+    filename=$(basename "$post_path")
+
+    IFS='-' read -r -a parts <<< "$filename"
+    date_part="${parts[0]}-${parts[1]}-${parts[2]}"
+
+    formatted_date=$(format_date "$date_part" "+%d %b %Y")
+    rss_date=$(format_date "$date_part" "-R") # (RFC-2822 format)
+
+    temp_title="${filename#$date_part-}"
+    temp_title="${temp_title%.md}"
+    temp_title="${temp_title//-/ }"
+    read -r -a words <<< "$temp_title"
+    title_part=""
+    for word in "${words[@]}"; do
+    	title_part+="${word^} " #^ = toupper()
+    done
+    title_part="${title_part% }"
+
+    md_link="[$title_part](./posts/${filename%.md}.html)"
+    POST_LIST_MD+="$formatted_date - $md_link"$'\n\n'
+
+    post_url="$SITE_URL/posts/${filename%.md}.html"
+    POST_LIST_RSS+=$(cat <<-EOM
+    <item>
+        <title>$title_part</title>
+        <link>$post_url</link>
+        <pubDate>$rss_date</pubDate>
+        <guid>$post_url</guid>
+        <description>$title_part</description>
+    </item>
+EOM
+)
+  done
+}
+
+create_index_page() {
+  echo "Generating index.md..."
+  cat > "$INDEX_MD_PATH" <<- EOM
+# Notes/Posts
+
+$POST_LIST_MD
+EOM
+}
+
+create_rss_feed() {
+  echo "Generating rss.xml..."
+  cat > "$RSS_XML_PATH" <<- EOM
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+    <title>$BLOG_TITLE</title>
+    <link>$SITE_URL</link>
+    <description>$BLOG_DESC</description>
+    <atom:link href="$SITE_URL/rss.xml" rel="self" type="application/rss+xml" />
+$POST_LIST_RSS
+</channel>
+</rss>
+EOM
+}
+
+build_site() {
+	local huap_cmd=""
+	if [[ -x "$SCRIPT_DIR/huap" ]]; then
+		huap_cmd="$SCRIPT_DIR/huap"
+	elif command -v huap &> /dev/null; then
+		huap_cmd="$(command -v huap)"
+	fi
+
+	if [[ -z "$huap_cmd" ]]; then
+		echo "[INFO]: huap not found; compiling local binary..." >&2
+		if make -C "$SCRIPT_DIR" compile >/dev/null 2>&1 && [[ -x "$SCRIPT_DIR/huap" ]]; then
+			huap_cmd="$SCRIPT_DIR/huap"
+		else
+			echo "[ERROR]: huap command not found." >&2
+			echo "Please install it to continue." >&2
+			echo "git clone https://github.com/ealvar3z/huap" >&2
+			exit 1
+		fi
+	fi
+
+  echo "Running huap static site generator with '$huap_cmd'..."
+  rm -rf "$DEST_DIR"
+  (cd "$SRC_DIR" && "$huap_cmd" "$DEST_DIR")
+}
+
+main() {
+  generate_post_lists
+  create_index_page
+	create_rss_feed
+  build_site
+  echo "Site generated successfully in $DEST_DIR"
+}
+
+main "$@"
